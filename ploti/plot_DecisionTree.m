@@ -1,0 +1,83 @@
+function plot_DecisionTree(tree, tag, fdir)
+
+global id;
+global nodes;
+%global names;
+id = 1;
+nodes = [];
+%names = cellstr();
+
+fid = fopen(strcat(fdir, '/graphviz_decisiontree'), 'w');
+DFS_traverse(tree, 0, tag, fid);
+fclose(fid);
+
+figure;
+treeplot(nodes);
+end
+
+function DFS_traverse(tree, pid, tag, fid)
+%% for treeplot
+global id;
+global nodes;
+global str;
+%global names;
+cur_id = id;
+nodes(id) = pid;
+
+%% for str: (accuracy, entropy, l2dist)
+if strcmp(tag, 'dt') & ~strcmp(tree.left, 'null')           % decision tree
+    % left child 
+    if strcmp(tree.left.attrId, 'null') == 0
+        fprintf(fid, '"attr %d=%.3f (%d/%d)"->"attr %d=%.3f (%d/%d)";\n', ...
+                tree.attrId, tree.split, ...
+                tree.num_p1, tree.num_data, ...
+                tree.left.attrId, tree.left.split, ...
+                tree.left.num_p1, tree.left.num_data);
+    else
+        fprintf(fid, '"attr %d=%.3f (%d/%d)"->"%s (%d, %d/%d)";\n', ...
+                tree.attrId, tree.split, ...
+                tree.num_p1, tree.num_data, ...
+                tree.split, tree.left.theta, ...
+                tree.left.num_p1, tree.left.num_data);
+    end
+    % right child
+    if strcmp(tree.right.attrId, 'null') == 0
+        fprintf(fid, '"attr %d=%.3f (%d/%d)"->"attr %d=%.3f (%d/%d)";\n', ...
+                tree.attrId, tree.split, ...
+                tree.num_p1, tree.num_data, ...
+                tree.right.attrId, tree.right.split, ...
+                tree.right.num_p1, tree.right.num_data);
+    else
+        fprintf(fid, '"attr %d=%.3f (%d/%d)"->"%s (%d, %d/%d)";\n', ...
+                tree.attrId, tree.split, ...
+                tree.num_p1, tree.num_data, ...
+                tree.split, tree.right.theta, ...
+                tree.right.num_p1, tree.right.num_data);
+    end        
+elseif strcmp(tag, 'dtlr') & ~strcmp(tree.w, 'null')        % dtlr
+    % left child
+    fprintf(fid, '"J=%.3f (%.3f,%d/%d)"->"J=%.3f (%.3f,%d/%d)";\n', ...
+            tree.J, tree.accuracy, ...
+            tree.num_p1, tree.num_data, ...
+            tree.left.J, tree.left.accuracy, ...
+            tree.left.num_p1, tree.left.num_data); 
+    % right child                       
+    fprintf(fid, '"J=%.3f (%.3f,%d/%d)"->"J=%.3f (%.3f,%d/%d)";\n', ...
+            tree.J, tree.accuracy, ...
+            tree.num_p1, tree.num_data, ...
+            tree.right.J, tree.right.accuracy, ...
+            tree.right.num_p1, tree.right.num_data); 
+end
+
+
+id = id + 1;
+if ( strcmp(tag, 'dtlr') & ~strcmp(tree.w, 'null') ) |...
+        ( strcmp(tag, 'dt') & ~strcmp(tree.left, 'null') )
+    DFS_traverse(tree.left, cur_id, tag, fid);
+    DFS_traverse(tree.right, cur_id, tag, fid);
+end
+    
+
+end
+
+
